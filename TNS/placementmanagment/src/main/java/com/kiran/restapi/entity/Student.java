@@ -26,7 +26,7 @@ public class Student {
 	@Column
 	private int year;
 	@Column
-	private String certificate;
+	private List<Certificate> certificate;
 	@Column
 	private String hallticket;
 	@Column

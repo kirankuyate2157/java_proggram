@@ -1,67 +1,114 @@
 package com.kiran.restapi.controller;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import com.kiran.restapi.entity.Student;
 import com.kiran.restapi.repository.StudentRepository;
 
+import java.util.List;
+import java.util.Optional;
+
 @RestController
 public class StudentController {
-	@Autowired
-	StudentRepository repo;
 
-	// Get - localhost:8000/student
-	@GetMapping("/student")
-	public List<Student> getAllStudent() {
+    @Autowired
+    StudentRepository repo;
 
-		List<Student> students = repo.findAll();
-		return students;
+    @GetMapping("/student")
+    public List<Student> getAllStudents() {
+        return repo.findAll();
+    }
 
-	}
+    @GetMapping("/student/{id}")
+    public ResponseEntity<Student> getStudent(@PathVariable int id) {
+        Optional<Student> optionalStudent = repo.findById(id);
+        return optionalStudent.map(student -> new ResponseEntity<>(student, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
 
-	// Get - localhost:8000/student/1
-	@GetMapping("/student/{id}")
-	public Student getStudent(@PathVariable int id) {
+    @PostMapping("/student/create")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createStudent(@RequestBody Student student) {
+        repo.save(student);
+    }
 
-		Student student = repo.findById(id).get();
-		return student;
-	}
+    @PutMapping("/student/{id}")
+    public ResponseEntity<Student> updateStudent(@PathVariable int id) {
+        Optional<Student> optionalStudent = repo.findById(id);
+        if (optionalStudent.isPresent()) {
+            Student student = optionalStudent.get();
+            student.setName("kiran");
+            student.setPercentage(86);
+            repo.save(student);
+            return new ResponseEntity<>(student, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 
-	// Post - localhost:8000/student/create
-	@PostMapping("/student/create")
-		@ResponseStatus(code= HttpStatus.CREATED)
-	public void createStudent(@RequestBody Student student) {
-			
-			repo.save(student);
-		}
+    @DeleteMapping("/student/delete/{id}")
+    public ResponseEntity<Void> removeStudent(@PathVariable int id) {
+        Optional<Student> optionalStudent = repo.findById(id);
+        if (optionalStudent.isPresent()) {
+            repo.delete(optionalStudent.get());
+            return new ResponseEntity<>(HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 
-	// Post - localhost:8000/student/2
-	@PutMapping("/student/{id}")
-	public Student updateStudent(@PathVariable int id) {
-		Student student = repo.findById(id).get();
-		student.setName("kiran");
-		student.setPercentage(86);
-		repo.save(student);
-		return student;
-	}
+    @GetMapping("/student/hallticket/{ticketNo}")
+    public ResponseEntity<Object> getStudentByHallTicket(@PathVariable String ticketNo) {
+        Optional<Student> optionalStudent = repo.findAll().stream()
+                .filter(student -> ticketNo.equals(student.getHallticket()))
+                .findFirst();
 
-	// Post - localhost:8000/student/delete
-	@DeleteMapping("/student/delete/{id}")
-	public void removeStudent(@PathVariable int id) {
-	    Student student = repo.findById(id).get();
-	    repo.delete(student);
-	}
+        return optionalStudent.map(student -> new ResponseEntity<>(student, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>("Student not found", HttpStatus.NOT_FOUND));
+    }
+
+    @PostMapping("/student/{id}/certificates/add")
+    public ResponseEntity<Certificate> addCertificateForStudent(@PathVariable long id, @RequestBody Certificate certificate) {
+        Optional<Student> optionalStudent = studentRepository.findById(id);
+
+        if (optionalStudent.isPresent()) {
+            Student student = optionalStudent.get();
+            student.getCertificates().add(certificate);
+            studentRepository.save(student);
+            return new ResponseEntity<>(certificate, HttpStatus.CREATED);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 
 
+    @PutMapping("/student/{id}/certificates/update")
+    public ResponseEntity<Certificate> updateCertificateForStudent(@PathVariable long id, @RequestBody Certificate updatedCertificate) {
+        Optional<Student> optionalStudent = studentRepository.findById(id);
+
+        if (optionalStudent.isPresent()) {
+            Student student = optionalStudent.get();
+
+            // Find the certificate to update based on its ID
+            Optional<Certificate> optionalCertificate = student.getCertificates().stream()
+                    .filter(cert -> cert.getId() == updatedCertificate.getId())
+                    .findFirst();
+
+            if (optionalCertificate.isPresent()) {
+                // Update the certificate fields
+                Certificate existingCertificate = optionalCertificate.get();
+                existingCertificate.setYear(updatedCertificate.getYear());
+                existingCertificate.setCollege(updatedCertificate.getCollege());
+
+                studentRepository.save(student);
+                return new ResponseEntity<>(existingCertificate, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 }
