@@ -2,33 +2,40 @@ package com.kiran.restapi.entity;
 
 import java.util.Date;
 
+import org.hibernate.annotations.*;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 
 @Entity
 @Table
 public class Placement {
 
-	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
-	private long id;
-	@Column
-	
-	private String name;
-	@Column
-	private College college;
-	@Column 
-	private Date date;
-	@Column
-	private String qualification;
-	@Column 
-	private int year;
-	
-	
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+
+    @Column
+    private String name;
+
+    @ManyToAny
+    private College college;
+
+    @Column
+    @Temporal(TemporalType.DATE)  // Add this annotation for the 'date' field
+    private Date date;
+
+    @Column
+    private String qualification;
+
+    @Column
+    private int year;
 	
 	public Placement() {
 		// TODO Auto-generated constructor stub

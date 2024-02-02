@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import com.kiran.restapi.entity.Certificate;
 import com.kiran.restapi.entity.Student;
 import com.kiran.restapi.repository.StudentRepository;
 
@@ -11,30 +13,31 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
+@RequestMapping("/student") // Base path for all endpoints
 public class StudentController {
 
     @Autowired
     StudentRepository repo;
 
-    @GetMapping("/student")
+    @GetMapping("/")
     public List<Student> getAllStudents() {
         return repo.findAll();
     }
 
-    @GetMapping("/student/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Student> getStudent(@PathVariable int id) {
         Optional<Student> optionalStudent = repo.findById(id);
         return optionalStudent.map(student -> new ResponseEntity<>(student, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PostMapping("/student/create")
+    @PostMapping("/create")
     @ResponseStatus(HttpStatus.CREATED)
     public void createStudent(@RequestBody Student student) {
         repo.save(student);
     }
 
-    @PutMapping("/student/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<Student> updateStudent(@PathVariable int id) {
         Optional<Student> optionalStudent = repo.findById(id);
         if (optionalStudent.isPresent()) {
@@ -48,7 +51,7 @@ public class StudentController {
         }
     }
 
-    @DeleteMapping("/student/delete/{id}")
+    @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> removeStudent(@PathVariable int id) {
         Optional<Student> optionalStudent = repo.findById(id);
         if (optionalStudent.isPresent()) {
@@ -58,51 +61,46 @@ public class StudentController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
-
-    @GetMapping("/student/hallticket/{ticketNo}")
+    @GetMapping("/hallticket/{ticketNo}")
     public ResponseEntity<Object> getStudentByHallTicket(@PathVariable String ticketNo) {
         Optional<Student> optionalStudent = repo.findAll().stream()
                 .filter(student -> ticketNo.equals(student.getHallticket()))
                 .findFirst();
 
         return optionalStudent.map(student -> new ResponseEntity<>(student, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>("Student not found", HttpStatus.NOT_FOUND));
+                .orElse(new ResponseEntity<>("Student not found", HttpStatus.NOT_FOUND));
     }
 
-    @PostMapping("/student/{id}/certificates/add")
+    @PostMapping("/{id}/certificates/add")
     public ResponseEntity<Certificate> addCertificateForStudent(@PathVariable long id, @RequestBody Certificate certificate) {
-        Optional<Student> optionalStudent = studentRepository.findById(id);
+        Optional<Student> optionalStudent = repo.findById(id);
 
         if (optionalStudent.isPresent()) {
             Student student = optionalStudent.get();
-            student.getCertificates().add(certificate);
-            studentRepository.save(student);
+            student.getCertificate().add(certificate);
+            repo.save(student);
             return new ResponseEntity<>(certificate, HttpStatus.CREATED);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
-
-    @PutMapping("/student/{id}/certificates/update")
+    @PutMapping("/{id}/certificates/update")
     public ResponseEntity<Certificate> updateCertificateForStudent(@PathVariable long id, @RequestBody Certificate updatedCertificate) {
-        Optional<Student> optionalStudent = studentRepository.findById(id);
+        Optional<Student> optionalStudent = repo.findById(id);
 
         if (optionalStudent.isPresent()) {
             Student student = optionalStudent.get();
-
-            // Find the certificate to update based on its ID
             Optional<Certificate> optionalCertificate = student.getCertificates().stream()
                     .filter(cert -> cert.getId() == updatedCertificate.getId())
                     .findFirst();
 
             if (optionalCertificate.isPresent()) {
-                // Update the certificate fields
                 Certificate existingCertificate = optionalCertificate.get();
                 existingCertificate.setYear(updatedCertificate.getYear());
                 existingCertificate.setCollege(updatedCertificate.getCollege());
 
-                studentRepository.save(student);
+                repo.save(student);
                 return new ResponseEntity<>(existingCertificate, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -111,4 +109,5 @@ public class StudentController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+
 }
